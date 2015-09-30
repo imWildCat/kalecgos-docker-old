@@ -1,0 +1,9 @@
+celery[redis]
+pyquery
+scrapy
+flask
+flask_json
+sqlalchemy
+redis
+mysql-python
+schedule

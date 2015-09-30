@@ -1,0 +1,34 @@
+redis:
+    image: redis
+    ports:
+      - "16379:6379"
+mysql:
+    build: ./mysql
+    environment:
+      - MYSQL_DATABASE=sdufe
+      - MYSQL_ROOT_PASSWORD=passwd
+    ports:
+      - "13306:3306"
+    # volumes:
+      # - ./mysql_conf.d:/etc/mysql/conf.d
+      # - ./mysql:/var/lib/mysql
+web:
+  build: .
+  volumes:
+    - .:/app
+  ports:
+    - "5000:5000"
+  links:
+    - redis:redis
+    - mysql:db
+worker:
+  build: .
+  dockerfile: Dockerfile-worker
+  links:
+    - redis:redis
+    - mysql:db
+schedule:
+  build: .
+  dockerfile: Dockerfile-schedule
+  links:
+    - redis:redis

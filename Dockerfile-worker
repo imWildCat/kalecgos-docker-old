@@ -1,0 +1,21 @@
+FROM python:2.7
+
+MAINTAINER Michael Chong <wildcat.name@gmail.com>
+
+WORKDIR /app/kalecgos
+
+ADD ./kalecgos/requirements.txt /app/kalecgos/requirements.txt
+
+RUN pip install -r requirements.txt
+
+ENV ENV production
+
+ADD . /app
+
+# Worker
+
+ENV C_FORCE_ROOT true
+
+WORKDIR /app/kalecgos/kalecgos
+
+CMD celery -A tasks worker --loglevel=info

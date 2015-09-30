@@ -1,0 +1,1 @@
+* * * * * cd /root && run_crawler.sh >> /var/log/cron.log 2>&1
