@@ -1,3 +1,4 @@
+requests
 celery[redis]
 pyquery
 scrapy
