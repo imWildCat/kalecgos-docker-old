@@ -10,10 +10,12 @@ from sqlalchemy.ext.declarative import declarative_base
 
 env = os.getenv('ENV', 'development')
 
-if env == 'development':
-    engine = create_engine('mysql://root@127.0.0.1/sdufe?charset=utf8', convert_unicode=True)
+if env == 'production':
+    engine = create_engine('mysql://root:passwd@db:3306/sdufe?charset=utf8', convert_unicode=True, pool_size=20,
+                           max_overflow=0)
 else:
-    engine = create_engine('mysql://root:passwd@db:3306/sdufe?charset=utf8', convert_unicode=True)
+    engine = create_engine('mysql://root@127.0.0.1/sdufe?charset=utf8', convert_unicode=True, pool_size=20,
+                           max_overflow=0, echo=True)
 
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,

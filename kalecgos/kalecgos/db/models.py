@@ -3,9 +3,9 @@
 
 __author__ = 'wildcat'
 
-from sqlalchemy import Column, Integer, String, Text, Enum, DateTime
+from sqlalchemy import Column, Integer, String, Text, Enum, DateTime, ForeignKey, Index
+from sqlalchemy.orm import relationship, backref
 from kalecgos.db.database import Base
-
 
 class User(Base):
     __tablename__ = 'users'
@@ -51,3 +51,34 @@ class News(Base):
                           u'校园传真', u'影像财大', u'领导讲话', u'财大论坛', u'人物风采', u'视频财大')
 
         return category_names[category_id - 1]
+
+class FileCode(Base):
+    __tablename__ = 'file_codes'
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(127), nullable=False)
+    expires_at = Column(Integer, nullable=False)
+    status = Column(Integer, nullable=False, default=0)
+    files = relationship('File', backref='code')
+
+    Index('code_expires_at_unique', code, expires_at, unique=True)
+
+    def __init__(self, code=None, expires_at=None):
+        self.code = code
+        self.expires_at = expires_at
+
+class File(Base):
+    __tablename__ = 'files'
+
+    id = Column(Integer, primary_key=True)
+    code_id = Column(Integer, ForeignKey('file_codes.id'))
+    name = Column(String(255), nullable=False)
+    remote_name = Column(String(255), nullable=False, unique=True)
+
+    Index('code_id_remote_name_unique', remote_name, unique=True)
+
+    def __init__(self, code_id, name, remote_name):
+        self.code_id = code_id
+        self.name = name
+        self.remote_name = remote_name
+
