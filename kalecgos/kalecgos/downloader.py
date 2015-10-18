@@ -25,7 +25,6 @@ qiniu_bucket_domain = os.getenv('QINIU_DOMAIN', '')
 
 q = qiniu.Auth(qiniu_access_key, qiniu_secret_key)
 
-
 def download_file(code_id, session, name, url, timestamp, file_code):
     local_filename = './temp/' + name
 

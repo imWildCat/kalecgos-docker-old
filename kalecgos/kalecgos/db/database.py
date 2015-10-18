@@ -12,10 +12,10 @@ env = os.getenv('ENV', 'development')
 
 if env == 'production':
     engine = create_engine('mysql://root:passwd@db:3306/sdufe?charset=utf8', convert_unicode=True, pool_size=20,
-                           max_overflow=0)
+                           max_overflow=0, pool_recycle=3600)
 else:
     engine = create_engine('mysql://root@127.0.0.1/sdufe?charset=utf8', convert_unicode=True, pool_size=20,
-                           max_overflow=0, echo=True)
+                           max_overflow=0, echo=True, pool_recycle=3600)
 
 db_session = scoped_session(sessionmaker(autocommit=False,
                                          autoflush=False,
