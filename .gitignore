@@ -3,3 +3,4 @@
 *.pyc
 kalecgos/.idea/
 kalecgos/kalecgos/temp/
+kalecgos/kalecgos/background/celerybeat-schedule

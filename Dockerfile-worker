@@ -18,4 +18,4 @@ ENV C_FORCE_ROOT true
 
 WORKDIR /app/kalecgos/kalecgos
 
-CMD celery -A tasks worker --loglevel=info
+CMD celery -A tasks worker -B --loglevel=info

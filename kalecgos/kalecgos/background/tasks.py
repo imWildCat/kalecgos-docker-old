@@ -1,31 +1,25 @@
 # -*- coding: utf-8 -*-
 # Created by WildCat. All rights reserved.
 
+from __future__ import absolute_import
+
 __author__ = 'wildcat'
 
 import sys
-import os
 
+sys.path.append('../../')
 sys.path.append('../')
-sys.path.append('./')
 
-from celery import Celery
+from kalecgos.background.celery import app
 
 from scrapy.crawler import CrawlerProcess
 from scrapy.settings import Settings
 from kalecgos.spiders.latest_news import LatestNewsSpider
 from kalecgos.spiders.news import NewsSpider
 
-env = os.getenv('ENV', 'development')
-
-if env == 'development':
-    app = Celery('tasks', broker='redis://localhost/3')
-else:
-    app = Celery('tasks', broker='redis://redis/3')
-
 @app.task
-def add(x, y):
-    return x + y
+def add():
+    print("hi")
 
 
 settings = Settings()
@@ -36,7 +30,6 @@ settings.set("USER_AGENT",
 settings.set("ITEM_PIPELINES", {
     'kalecgos.pipelines.KalecgosPipeline': 300,
 })
-
 
 @app.task
 def perform_latest_news_spider():

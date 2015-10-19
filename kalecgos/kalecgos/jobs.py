@@ -10,7 +10,7 @@ sys.path.append('./')
 import time
 import logging
 import schedule
-from tasks import perform_latest_news_spider
+from kalecgos.background.tasks import perform_latest_news_spider
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 

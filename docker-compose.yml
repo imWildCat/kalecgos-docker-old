@@ -27,8 +27,3 @@ worker:
   links:
     - redis:redis
     - mysql:db
-schedule:
-  build: .
-  dockerfile: Dockerfile-schedule
-  links:
-    - redis:redis
