@@ -2,27 +2,16 @@
 # Created by WildCat. All rights reserved.
 
 from __future__ import absolute_import
-
-__author__ = 'wildcat'
-
-import sys
-
-sys.path.append('../../')
-sys.path.append('../')
-
 import os
 import qiniu
 import hashlib
-
 from kalecgos.background.celery import app
-
 from scrapy.crawler import CrawlerProcess
 from scrapy.settings import Settings
 from kalecgos.spiders.latest_news import LatestNewsSpider
 from kalecgos.spiders.news import NewsSpider
-
-from db.database import db_session
-from db.models import File, FileCode
+from kalecgos.db.database import db_session
+from kalecgos.db.models import File, FileCode
 
 settings = Settings()
 
@@ -47,10 +36,8 @@ def perform_news_spider():
     process.crawl(NewsSpider)
     process.start()
 
-TEMP_PATH = '../temp'
 
-if not os.path.exists(TEMP_PATH):
-    os.makedirs(TEMP_PATH)
+TEMP_PATH = '../temp/'
 
 qiniu_access_key = os.getenv('QINIU_AK', '')
 qiniu_secret_key = os.getenv('QINIU_SK', '')
@@ -77,7 +64,7 @@ def perform_download(files, file_code_record_id, session, timestamp, file_code):
 
 
 def download_file(code_id, session, name, url, timestamp, file_code):
-    local_filename = 'TEMP_PATH/' + name
+    local_filename = TEMP_PATH + name
 
     # Generate hash and remote file name
     m = hashlib.md5()
@@ -104,12 +91,12 @@ def download_file(code_id, session, name, url, timestamp, file_code):
 
 def upload_file(code_id, file_name, remote_file_name):
     # Upload the file
-    data = open('TEMP_PATH/' + file_name)
+    data = open(TEMP_PATH + file_name)
     token = q.upload_token(qiniu_bucket_name)
     ret, info = qiniu.put_data(token, remote_file_name, data)
 
     # Remove local file
-    os.remove('TEMP_PATH/' + file_name)
+    os.remove(TEMP_PATH + file_name)
 
     if ret is not None:
         print('%s is uploaded.' % file_name)
@@ -117,10 +104,6 @@ def upload_file(code_id, file_name, remote_file_name):
         db_session.add(f)
         db_session.commit()
 
-        # Generate URL:
-        # base_url = u'http://%s/%s' % (qiniu_bucket_domain, remote_file_name)
-        # private_url = q.private_download_url(base_url.encode('utf-8'), expires=900)  # Expires in 15 minutes
-        # print(private_url)
         return f.id
     else:
         print(info.encode('utf-8'))

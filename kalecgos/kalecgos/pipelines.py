@@ -6,8 +6,8 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 from kalecgos.db.database import init_db, db_session
-from kalecgos.db.models import *
-from kalecgos.items import *
+from kalecgos.db.models import News
+from kalecgos.items import NewsItem
 
 
 class KalecgosPipeline(object):

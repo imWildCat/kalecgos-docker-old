@@ -11,7 +11,7 @@ sys.path.append('./')
 import time
 from flask import Flask, session, redirect, url_for, escape, request, jsonify, g
 from flask_json import FlaskJSON, JsonError, json_response, as_json
-from kalecgos.db.models import *
+from kalecgos.db.models import News, Device, FileCode, devices_and_file_codes_table
 from kalecgos.db.database import init_db, db_session
 from downloader import filex_handler
 
@@ -93,18 +93,60 @@ def gen_device(device_type_id):
     device.type = Device.device_type_id_to_type(device_type_id)
     db_session.add(device)
     db_session.commit()
-    print(device)
     return json_response(uid=device.uid)
 
 
 @app.route(API_V1_PREFIX + 'filex/download/<string:file_code>')
 def download_file(file_code):
-    file_code_record_id, files, is_downloaded = filex_handler(file_code)
-    return json_response(
-        file_code_record_id=file_code_record_id,
-        files=files,
-        is_downloaded= is_downloaded
-    )
+    token = request.headers.get('token')
+
+    if token is not None:
+        device = Device.query.filter_by(uid=token).first()
+        if device is not None:
+            file_code_record, file_names, is_downloaded = filex_handler(file_code)
+            if file_code_record is None:
+                return json_response(error_code=400, error_message='不存在此提取码')
+            else:
+                device.file_codes.append(file_code_record)
+                db_session.add(device)
+                db_session.commit()
+                return json_response(
+                    file_code_record_id=file_code_record.id,
+                    file_names=file_names,
+                    is_downloaded=is_downloaded
+                )
+    return json_response(error_code=403, error_message='您尚未登录。')
+
+
+@app.route(API_V1_PREFIX + 'filex/list')
+def filex_list():
+    token = request.headers.get('token')
+    if token is not None:
+        device = Device.query.filter_by(uid=token).first()
+        file_codes = [{'id': fc.id, 'description': fc.description} for fc in device.file_codes]
+        if device is not None:
+            return json_response(
+                file_codes=file_codes,
+            )
+    return json_response(error_code=403, error_message='您尚未登录。')
+
+
+@app.route(API_V1_PREFIX + 'filex/get/<int:file_code_id>')
+def filex_get(file_code_id):
+    token = request.headers.get('token')
+    if token is not None:
+        device = Device.query.filter_by(uid=token).first()
+        if device is not None:
+            dfc = db_session.query(devices_and_file_codes_table).filter_by(device_id=device.id,
+                                                                           file_code_id=file_code_id)
+            if dfc is not None:
+                file_code = FileCode.query.get(file_code_id)
+                files = [{'name': f.name, 'url': f.gen_url()} for f in file_code.files]
+                return json_response(files=files, code=file_code.code, created_at=file_code.created_at.isoformat())
+            else:
+                return json_response(error_code=403, error_message='您无此文件。')
+    return json_response(error_code=403, error_message='您尚未登录。')
+    pass
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -125,6 +167,7 @@ def logout():
     # remove the username from the session if it's there
     session.pop('username', None)
     return redirect(url_for('index'))
+
 
 # set the secret key.  keep this really secret:
 # app.secret_key = 'xxx'

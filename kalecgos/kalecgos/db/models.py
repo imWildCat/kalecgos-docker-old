@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # Created by WildCat. All rights reserved.
 
-__author__ = 'wildcat'
-
 from sqlalchemy import Column, Integer, String, Text, Enum, DateTime, ForeignKey, Index, CHAR, Table
 from sqlalchemy.orm import relationship, backref
 from kalecgos.db.database import Base
+from kalecgos.utils.qiniu_util import qiniu_auth, qiniu_bucket_domain
 
 import base64
 import uuid
+import datetime
 
 
 class User(Base):
@@ -44,9 +44,11 @@ class Device(Base):
     id = Column(Integer, primary_key=True)
     uid = Column(CHAR(22), primary_key=True, unique=True)
     type = Column(Enum(u'ios', u'android'), nullable=False)
+    created_at = Column(DateTime, nullable=False)
     file_codes = relationship('FileCode', secondary=devices_and_file_codes_table)
 
     def __init__(self):
+        self.created_at = datetime.datetime.now()
         self.uid = gen_uid()
 
     def __repr__(self):
@@ -93,15 +95,19 @@ class FileCode(Base):
 
     id = Column(Integer, primary_key=True)
     code = Column(String(127), nullable=False)
+    created_at = Column(DateTime, nullable=False)
     expires_at = Column(Integer, nullable=False)
     status = Column(Integer, nullable=False, default=0)
+    description = Column(String(127), nullable=True)
     files = relationship('File', backref='code')
 
     Index('code_expires_at_unique', code, expires_at, unique=True)
 
-    def __init__(self, code=None, expires_at=None):
+    def __init__(self, code=None, expires_at=None, description=None):
         self.code = code
+        self.created_at = datetime.datetime.now()
         self.expires_at = expires_at
+        self.description = description
 
 
 class File(Base):
@@ -118,3 +124,8 @@ class File(Base):
         self.code_id = code_id
         self.name = name
         self.remote_name = remote_name
+
+    def gen_url(self):
+        # Generate URL:
+        base_url = u'http://%s/%s' % (qiniu_bucket_domain, self.remote_name)
+        return qiniu_auth.private_download_url(base_url.encode('utf-8'), expires=900)  # Expires in 15 minutes
