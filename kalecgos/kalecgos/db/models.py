@@ -3,9 +3,13 @@
 
 __author__ = 'wildcat'
 
-from sqlalchemy import Column, Integer, String, Text, Enum, DateTime, ForeignKey, Index
+from sqlalchemy import Column, Integer, String, Text, Enum, DateTime, ForeignKey, Index, CHAR, Table
 from sqlalchemy.orm import relationship, backref
 from kalecgos.db.database import Base
+
+import base64
+import uuid
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -20,6 +24,37 @@ class User(Base):
 
     def __repr__(self):
         return '%s (%r, %r)' % (self.__class__.__name__, self.name, self.email)
+
+
+devices_and_file_codes_table = Table('devices_and_file_codes', Base.metadata,
+                                     Column('device_id', Integer, ForeignKey('devices.id')),
+                                     Column('file_code_id', Integer, ForeignKey('file_codes.id'))
+                                     )
+
+
+def gen_uid():
+    uid = uuid.uuid4().bytes
+    r_uuid = base64.urlsafe_b64encode(uid)
+    return r_uuid.replace('=', '')
+
+
+class Device(Base):
+    __tablename__ = 'devices'
+
+    id = Column(Integer, primary_key=True)
+    uid = Column(CHAR(22), primary_key=True, unique=True)
+    type = Column(Enum(u'ios', u'android'), nullable=False)
+    file_codes = relationship('FileCode', secondary=devices_and_file_codes_table)
+
+    def __init__(self):
+        self.uid = gen_uid()
+
+    def __repr__(self):
+        return '%s [%s](%s)' % (self.__class__.__name__, self.uid, self.id)
+
+    @staticmethod
+    def device_type_id_to_type(device_type_id):
+        return ['ios', 'android'][device_type_id - 1]
 
 
 class News(Base):
@@ -52,6 +87,7 @@ class News(Base):
 
         return category_names[category_id - 1]
 
+
 class FileCode(Base):
     __tablename__ = 'file_codes'
 
@@ -67,6 +103,7 @@ class FileCode(Base):
         self.code = code
         self.expires_at = expires_at
 
+
 class File(Base):
     __tablename__ = 'files'
 
@@ -81,4 +118,3 @@ class File(Base):
         self.code_id = code_id
         self.name = name
         self.remote_name = remote_name
-

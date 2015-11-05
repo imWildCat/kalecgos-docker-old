@@ -11,15 +11,18 @@ sys.path.append('./')
 import time
 from flask import Flask, session, redirect, url_for, escape, request, jsonify, g
 from flask_json import FlaskJSON, JsonError, json_response, as_json
-from json import dumps
 from kalecgos.db.models import *
-from kalecgos.db.database import init_db
+from kalecgos.db.database import init_db, db_session
+from downloader import filex_handler
+
+API_V1_PREFIX = '/api/v1/'
 
 app = Flask(__name__)
 
 app.config['JSON_ADD_STATUS'] = True
 app.config['JSON_STATUS_FIELD_NAME'] = 'status'
 app.config['JSON_DATETIME_FORMAT'] = 'YYYY-MM-DDTHH:MM:SS.mmmmmm'
+
 
 @app.before_request
 def before_request():
@@ -39,11 +42,13 @@ def index():
         return 'Logged in as %s' % escape(session['username'])
     return jsonify({'a': 2})
 
-@app.route('/api/v1/status')
+
+@app.route(API_V1_PREFIX + 'status')
 def status():
     return json_response(server_status=True, latest_client_version='0.1.0')
 
-@app.route('/api/v1/news/category/<int:category_id>/page/<int:page>')
+
+@app.route(API_V1_PREFIX + 'news/category/<int:category_id>/page/<int:page>')
 def news_list(category_id, page):
     if category_id < 1:
         category_id = 1
@@ -54,12 +59,52 @@ def news_list(category_id, page):
     per_page = 20
     offset = per_page * (page - 1)
 
-    ret = News.query.with_entities(News.id, News.title, News.date, News.editor).filter(News.category == News.category_id_to_value(category_id)). \
+    category_name = News.category_id_to_value(category_id)
+
+    ret = News.query.with_entities(News.id, News.title, News.date, News.editor).filter(News.category == category_name). \
         order_by(News.id.desc()).limit(per_page).offset(offset).all()
 
-    ret = [{News.id.name: r[0], News.title.name: r[1], News.date.name: r[2].isoformat(), News.editor.name: r[3]} for r in ret]
+    count = len(ret)
+    has_new_page = False
+    if count > 0:
+        has_new_page = True
 
-    return json_response(news_list=ret)
+    ret = [{News.id.name: r[0], News.title.name: r[1], News.date.name: r[2].isoformat(), News.editor.name: r[3]} for r
+           in ret]
+
+    return json_response(news_list=ret, page=page, category_id=category_id, category_name=category_name, count=count,
+                         has_more_page=has_new_page)
+
+
+@app.route(API_V1_PREFIX + 'news/id/<int:news_id>')
+def single_news(news_id):
+    news = News.query.get(news_id)
+    if news is None:
+        return json_response(error_code=404, error_message='新闻未找到。')
+    else:
+        return json_response(id=news.id, title=news.title, category=news.category, date=news.date.isoformat(),
+                             editor=news.editor,
+                             content=news.content)
+
+
+@app.route(API_V1_PREFIX + 'gen_device/type/<int:device_type_id>')
+def gen_device(device_type_id):
+    device = Device()
+    device.type = Device.device_type_id_to_type(device_type_id)
+    db_session.add(device)
+    db_session.commit()
+    print(device)
+    return json_response(uid=device.uid)
+
+
+@app.route(API_V1_PREFIX + 'filex/download/<string:file_code>')
+def download_file(file_code):
+    file_code_record_id, files, is_downloaded = filex_handler(file_code)
+    return json_response(
+        file_code_record_id=file_code_record_id,
+        files=files,
+        is_downloaded= is_downloaded
+    )
 
 
 @app.route('/login', methods=['GET', 'POST'])
