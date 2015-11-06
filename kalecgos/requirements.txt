@@ -1,6 +1,6 @@
 qiniu
 requests
-celery[redis]
+celery[librabbitmq,redis,auth,msgpack]
 pyquery
 scrapy
 flask

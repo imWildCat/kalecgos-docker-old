@@ -33,6 +33,8 @@ def before_request():
 @app.after_request
 def after_request(response):
     print('Rendered in %s' % g.request_time())
+    token = request.headers.get('token')
+    print('Token: %s' % token)
     return response
 
 
@@ -87,8 +89,8 @@ def single_news(news_id):
                              content=news.content)
 
 
-@app.route(API_V1_PREFIX + 'gen_device/type/<int:device_type_id>')
-def gen_device(device_type_id):
+@app.route(API_V1_PREFIX + 'token/gen/<int:device_type_id>')
+def gen_device_token(device_type_id):
     device = Device()
     device.type = Device.device_type_id_to_type(device_type_id)
     db_session.add(device)
@@ -96,7 +98,18 @@ def gen_device(device_type_id):
     return json_response(uid=device.uid)
 
 
-@app.route(API_V1_PREFIX + 'filex/download/<string:file_code>')
+@app.route(API_V1_PREFIX + 'device/check')
+def check_device_token():
+    token = request.headers.get('token')
+
+    if token is not None:
+        device = Device.query.filter_by(uid=token).first()
+        if device is not None:
+            return json_response(is_valid=True)
+    return json_response(error_code=403, error_message='设备 token 无效。')
+
+
+@app.route(API_V1_PREFIX + 'file_code/add/<string:file_code>')
 def download_file(file_code):
     token = request.headers.get('token')
 
@@ -105,25 +118,26 @@ def download_file(file_code):
         if device is not None:
             file_code_record, file_names, is_downloaded = filex_handler(file_code)
             if file_code_record is None:
-                return json_response(error_code=400, error_message='不存在此提取码')
+                return json_response(error_code=400, error_message='不存在此提取码。')
             else:
                 device.file_codes.append(file_code_record)
                 db_session.add(device)
                 db_session.commit()
                 return json_response(
-                    file_code_record_id=file_code_record.id,
+                    file_code_id=file_code_record.id,
                     file_names=file_names,
                     is_downloaded=is_downloaded
                 )
     return json_response(error_code=403, error_message='您尚未登录。')
 
 
-@app.route(API_V1_PREFIX + 'filex/list')
+@app.route(API_V1_PREFIX + 'file_code/list')
 def filex_list():
     token = request.headers.get('token')
     if token is not None:
         device = Device.query.filter_by(uid=token).first()
-        file_codes = [{'id': fc.id, 'description': fc.description} for fc in device.file_codes]
+        file_codes = [{'id': fc.id, 'description': fc.description, 'is_downloaded': fc.status == 1,
+                       'created_at': fc.created_at.isoformat()} for fc in device.file_codes]
         if device is not None:
             return json_response(
                 file_codes=file_codes,
@@ -131,7 +145,7 @@ def filex_list():
     return json_response(error_code=403, error_message='您尚未登录。')
 
 
-@app.route(API_V1_PREFIX + 'filex/get/<int:file_code_id>')
+@app.route(API_V1_PREFIX + 'file_code/get/<int:file_code_id>')
 def filex_get(file_code_id):
     token = request.headers.get('token')
     if token is not None:
