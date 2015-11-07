@@ -32,7 +32,7 @@ def filex_handler(file_code):
     file_names = [e.text for e in download_link_elements]
 
     if len(files) < 1:
-        return None, file_names, False
+        return None, None, False
 
     # Handle time
     date_string_raw = selector('table font[size="2"]').text()
@@ -53,8 +53,8 @@ def filex_handler(file_code):
             db_session.add(file_code_record)
             db_session.commit()
         perform_download.delay(files, file_code_record.id, s, timestamp, file_code)
-        return file_code_record, file_names, False
-    return file_code_record, file_names, True
+        return file_code_record, file_code_record.description, False
+    return file_code_record, file_code_record.description, True
 
     # print(len(download_link_elements))
     # print(files)

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Created by WildCat. All rights reserved.
 
-__author__ = 'wildcat'
 
 import sys
 import os
@@ -116,17 +115,19 @@ def download_file(file_code):
     if token is not None:
         device = Device.query.filter_by(uid=token).first()
         if device is not None:
-            file_code_record, file_names, is_downloaded = filex_handler(file_code)
+            file_code_record, description, is_downloaded = filex_handler(file_code)
             if file_code_record is None:
                 return json_response(error_code=400, error_message='不存在此提取码。')
             else:
                 device.file_codes.append(file_code_record)
                 db_session.add(device)
                 db_session.commit()
+
                 return json_response(
                     file_code_id=file_code_record.id,
-                    file_names=file_names,
-                    is_downloaded=is_downloaded
+                    description=description,
+                    is_downloaded=is_downloaded,
+                    file_code=file_code
                 )
     return json_response(error_code=403, error_message='您尚未登录。')
 
@@ -137,7 +138,7 @@ def filex_list():
     if token is not None:
         device = Device.query.filter_by(uid=token).first()
         file_codes = [{'id': fc.id, 'description': fc.description, 'is_downloaded': fc.status == 1,
-                       'created_at': fc.created_at.isoformat()} for fc in device.file_codes]
+                       'created_at': fc.created_at.isoformat(), 'code': fc.code} for fc in list(reversed(device.file_codes))]
         if device is not None:
             return json_response(
                 file_codes=file_codes,
@@ -145,7 +146,7 @@ def filex_list():
     return json_response(error_code=403, error_message='您尚未登录。')
 
 
-@app.route(API_V1_PREFIX + 'file_code/get/<int:file_code_id>')
+@app.route(API_V1_PREFIX + 'file_code/<int:file_code_id>')
 def filex_get(file_code_id):
     token = request.headers.get('token')
     if token is not None:
@@ -160,7 +161,6 @@ def filex_get(file_code_id):
             else:
                 return json_response(error_code=403, error_message='您无此文件。')
     return json_response(error_code=403, error_message='您尚未登录。')
-    pass
 
 
 @app.route('/login', methods=['GET', 'POST'])
