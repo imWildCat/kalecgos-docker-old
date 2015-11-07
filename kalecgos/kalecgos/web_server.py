@@ -153,7 +153,8 @@ def filex_get(file_code_id):
         device = Device.query.filter_by(uid=token).first()
         if device is not None:
             dfc = db_session.query(devices_and_file_codes_table).filter_by(device_id=device.id,
-                                                                           file_code_id=file_code_id)
+                                                                           file_code_id=file_code_id).first()
+            print(dfc)
             if dfc is not None:
                 file_code = FileCode.query.get(file_code_id)
                 files = [{'name': f.name, 'url': f.gen_url()} for f in file_code.files]
