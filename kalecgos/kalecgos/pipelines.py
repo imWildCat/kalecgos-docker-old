@@ -21,8 +21,10 @@ class KalecgosPipeline(object):
             print('Category is ' + item['category'])
             n = News(id=item['id'], title=item['title'], category=item['category'], date=item['date'],
                      editor=item['editor'], content=item['content'])
-            db_session.bulk_save_objects([n], update_changed_only=False)
-            db_session.commit()
+            new_record = News.query.get(item['id'])
+            if new_record is None:
+                db_session.bulk_save_objects([n], update_changed_only=True)
+                db_session.commit()
         except Exception, e:
             print("wrong item: %s" % e)
         finally:

@@ -36,6 +36,11 @@ def after_request(response):
     print('Token: %s' % token)
     return response
 
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
+    print("test")
+
 
 @app.route('/')
 def index():
@@ -195,5 +200,4 @@ if __name__ == '__main__':
     else:
         app.debug = True
         print('App start in production mode.')
-    init_db()
     app.run(host='0.0.0.0')
