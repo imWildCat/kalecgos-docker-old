@@ -3,8 +3,7 @@ redis:
     ports:
       - "16379:6379"
 mysql:
-    build: .
-    dockerfile: Dockerfile-mysql
+    build: ./mysql
     environment:
       - MYSQL_DATABASE=sdufe
       - MYSQL_ROOT_PASSWORD=passwd
@@ -12,7 +11,7 @@ mysql:
       - "13306:3306"
     volumes:
       - ./mysql_conf.d:/etc/mysql/conf.d
-      - ./mysql:/var/lib/mysql
+      - ./vars:/var/lib/mysql
 web:
   build: .
   env_file:
