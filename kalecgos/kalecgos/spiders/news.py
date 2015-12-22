@@ -46,7 +46,11 @@ class NewsSpider(CrawlSpider):
         item['category'] = sel.css('body > div.mian_sub > div > div > div > a:nth-child(2)::text')[0].extract()
         meta_string = sel.xpath('//td[@valign="top"]//font[@color="#666666"]/text()')[0].extract()
         date_string = re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}', meta_string).group(0)
-        editor_string = re.search(ur'单位:([\u4E00-\u9FA5]+)', meta_string).group(1)
+        editor_element = re.search(ur'单位:([\u4E00-\u9FA5]+)', meta_string)
+        if editor_element is None:
+            editor_string = ''
+        else:
+            editor_string = re.search(ur'单位:([\u4E00-\u9FA5]+)', meta_string).group(1)
         item['date'] = date_string
         item['editor'] = editor_string
         d = pq(response.body)

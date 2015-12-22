@@ -7,35 +7,23 @@ import qiniu
 import hashlib
 from kalecgos.background.celery import app
 from scrapy.crawler import CrawlerProcess
-from scrapy.settings import Settings
+from scrapy.utils.project import get_project_settings
+from scrapy.utils.log import configure_logging
 from kalecgos.spiders.latest_news import LatestNewsSpider
 from kalecgos.spiders.news import NewsSpider
 from kalecgos.db.database import db_session
 from kalecgos.db.models import File, FileCode
 
-settings = Settings()
-
-# crawl settings
-settings.set("USER_AGENT",
-             "Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/32.0.1667.0 Safari/537.36")
-settings.set("ITEM_PIPELINES", {
-    'kalecgos.pipelines.KalecgosPipeline': 300,
-})
-
+# settings = get_project_settings()
 
 @app.task
 def perform_latest_news_spider():
-    process = CrawlerProcess(settings)
-    process.crawl(LatestNewsSpider)
-    process.start()
+    os.system('scrapy crawl latest_news')
 
 
 @app.task
 def perform_news_spider():
-    process = CrawlerProcess(settings)
-    process.crawl(NewsSpider)
-    process.start()
-
+    os.system('scrapy crawl news')
 
 TEMP_PATH = '../temp/'
 
