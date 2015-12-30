@@ -1,0 +1,12 @@
+qiniu
+requests
+celery[librabbitmq,redis,auth,msgpack]
+pyquery
+scrapy
+flask
+flask_json
+sqlalchemy
+redis
+mysql-python
+schedule
+python-dateutil
